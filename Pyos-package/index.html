@@ -1,0 +1,680 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>PyOS - Dev Tool</title>
+    
+    <script src="https://cdn.jsdelivr.net/pyodide/v0.26.1/full/pyodide.js"></script>
+
+    <style>
+        /* Basic Reset & Fonts */
+        :root {
+            --gray-900: #111827; --gray-800: #1f2937; --gray-700: #374151; --gray-500: #6b7280;
+            --gray-400: #9ca3af; --gray-200: #e5e7eb; --teal-400: #2dd4bf; --teal-500: #14b8a6;
+            --teal-600: #0d9488; --indigo-600: #4f46e5; --indigo-700: #4338ca; --blue-600: #2563eb;
+            --blue-700: #1d4ed8; --green-300: #6ee7b7; --red-400: #f87171; --red-500: #ef4444;
+            --yellow-400: #facc15; --white: #ffffff;
+        }
+        body { 
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif, "Apple Color Emoji", "Segoe UI Emoji", "Segoe UI Symbol";
+            background-color: var(--gray-900); color: var(--gray-200);
+            margin: 0;
+        }
+        .editor { font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace; }
+        .font-mono { font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace; }
+        .antialiased { -webkit-font-smoothing: antialiased; -moz-osx-font-smoothing: grayscale; }
+
+        /* Layout & Sizing */
+        .h-screen { height: 100vh; } .flex { display: flex; } .flex-col { flex-direction: column; }
+        .flex-grow { flex-grow: 1; } .gap-4 { gap: 1rem; } .p-4 { padding: 1rem; } .p-3 { padding: 0.75rem; }
+        .p-2 { padding: 0.5rem; } .pl-2 { padding-left: 0.5rem; } .pb-2 { padding-bottom: 0.5rem; }
+        .pr-2 { padding-right: 0.5rem; } .py-2 { padding-top: 0.5rem; padding-bottom: 0.5rem; }
+        .px-4 { padding-left: 1rem; padding-right: 1rem; } .py-1\.5 { padding-top: 0.375rem; padding-bottom: 0.375rem; }
+        .mt-4 { margin-top: 1rem; } .mb-3 { margin-bottom: 0.75rem; } .mr-3 { margin-right: 0.75rem; }
+        .my-1 { margin-top: 0.25rem; margin-bottom: 0.25rem; }
+        .w-full { width: 100%; } .w-1\/2 { width: 50%; } .w-1\/4 { width: 25%; } .h-5 { height: 1.25rem; } .w-5 { width: 1.25rem; }
+
+        /* Flexbox & Alignment */
+        .justify-between { justify-content: space-between; } .items-center { align-items: center; }
+
+        /* Borders & Rounded Corners */
+        .border-b { border-bottom-width: 1px; } .border-gray-700 { border-color: var(--gray-700); }
+        .rounded-lg { border-radius: 0.5rem; } .rounded-md { border-radius: 0.375rem; }
+        .rounded-t-lg { border-top-left-radius: 0.5rem; border-top-right-radius: 0.5rem; }
+        .rounded-b-lg { border-bottom-left-radius: 0.5rem; border-bottom-right-radius: 0.5rem; }
+
+        /* Colors & Styles */
+        .bg-gray-800 { background-color: var(--gray-800); }
+        .bg-gray-700\/50 { background-color: rgba(55, 65, 81, 0.5); }
+        .shadow-lg { box-shadow: 0 10px 15px -3px rgba(0,0,0,0.1), 0 4px 6px -2px rgba(0,0,0,0.05); }
+        .text-xl { font-size: 1.25rem; line-height: 1.75rem; } .text-lg { font-size: 1.125rem; line-height: 1.75rem; }
+        .text-sm { font-size: 0.875rem; line-height: 1.25rem; } .text-xs { font-size: 0.75rem; line-height: 1rem; }
+        .font-bold { font-weight: 700; } .font-semibold { font-weight: 600; }
+        .text-teal-400 { color: var(--teal-400); } .text-yellow-400 { color: var(--yellow-400); }
+        .text-gray-400 { color: var(--gray-400); } .text-gray-500 { color: var(--gray-500); }
+        .text-green-300 { color: var(--green-300); } .text-red-400 { color: var(--red-400); }
+        .text-red-500 { color: var(--red-500); } .text-white { color: var(--white); }
+        .bg-blue-600 { background-color: var(--blue-600); } .hover\:bg-blue-700:hover { background-color: var(--blue-700); }
+        .bg-indigo-600 { background-color: var(--indigo-600); } .hover\:bg-indigo-700:hover { background-color: var(--indigo-700); }
+        .bg-teal-500 { background-color: var(--teal-500); } .hover\:bg-teal-600:hover { background-color: var(--teal-600); }
+
+        /* Interactivity & States */
+        .transition { transition-property: color, background-color, border-color, text-decoration-color, fill, stroke, opacity, box-shadow, transform, filter, backdrop-filter; transition-timing-function: cubic-bezier(0.4, 0, 0.2, 1); transition-duration: 150ms; }
+        .transition-colors { transition-property: color, background-color, border-color, text-decoration-color, fill, stroke; transition-timing-function: cubic-bezier(0.4, 0, 0.2, 1); transition-duration: 150ms; }
+        .duration-500 { transition-duration: 500ms; }
+        .disabled\:opacity-50:disabled { opacity: 0.5; }
+        .disabled\:cursor-not-allowed:disabled { cursor: not-allowed; }
+        .cursor-pointer { cursor: pointer; } .hover\:bg-gray-700:hover { background-color: var(--gray-700); }
+        .opacity-50 { opacity: 0.5; } .hover\:opacity-100:hover { opacity: 1; }
+        .outline-none { outline: 2px solid transparent; outline-offset: 2px; } .resize-none { resize: none; }
+
+        /* Animations & Misc */
+        .z-10 { z-index: 10; }
+        .overflow-hidden { overflow: hidden; } .overflow-y-auto { overflow-y: auto; }
+        .whitespace-pre-wrap { white-space: pre-wrap; }
+        @keyframes spin { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
+        .animate-spin { animation: spin 1s linear infinite; }
+        @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+        .fade-in { animation: fadeIn 0.5s ease-in-out; }
+        ::-webkit-scrollbar { width: 8px; } ::-webkit-scrollbar-track { background: #1f2937; }
+        ::-webkit-scrollbar-thumb { background: #4b5563; border-radius: 4px; }
+        ::-webkit-scrollbar-thumb:hover { background: #6b7280; }
+    </style>
+</head>
+<body class="bg-gray-900 text-gray-200 h-screen flex flex-col antialiased">
+
+    <header class="bg-gray-800 shadow-lg p-3 flex justify-between items-center z-10 border-b border-gray-700">
+        <h1 class="text-xl font-bold text-teal-400">🧠 PyOS</h1>
+        <div id="status-indicator" class="text-yellow-400 flex items-center transition-colors duration-500">
+            <svg id="spinner" class="animate-spin h-5 w-5 mr-3" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+            </svg>
+            <span id="status-text">Booting PyOS Environment...</span>
+        </div>
+    </header>
+
+    <main class="flex-grow flex p-4 gap-4 overflow-hidden">
+        <div class="w-1/4 flex flex-col bg-gray-800 rounded-lg shadow-lg p-4 fade-in">
+            <h2 class="text-lg font-semibold border-b border-gray-700 pb-2 mb-3">📁 Files</h2>
+            <div id="file-browser" class="flex-grow overflow-y-auto pr-2">
+                <p class="text-gray-500">Loading filesystem...</p>
+            </div>
+            <button id="export-zip-btn" class="mt-4 w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded-lg transition disabled:opacity-50 disabled:cursor-not-allowed" disabled>Export Files as .zip</button>
+        </div>
+
+        <div class="w-1/2 flex flex-col bg-gray-800 rounded-lg shadow-lg fade-in">
+            <div class="flex justify-between items-center p-2 bg-gray-700/50 rounded-t-lg border-b border-gray-700">
+                <span id="current-file" class="text-gray-400 pl-2"></span>
+                <div>
+                    <button id="save-btn" class="bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-1.5 px-4 rounded-md transition text-sm disabled:opacity-50" disabled>Save</button>
+                    <button id="run-btn" class="bg-teal-500 hover:bg-teal-600 text-white font-bold py-1.5 px-4 rounded-md transition text-sm disabled:opacity-50" disabled>▶ Run</button>
+                </div>
+            </div>
+            <textarea id="editor" class="editor flex-grow bg-gray-900 text-green-300 p-4 rounded-b-lg resize-none outline-none" spellcheck="false" placeholder="Write your Python code here..."></textarea>
+        </div>
+
+        <div class="w-1/4 flex flex-col bg-gray-800 rounded-lg shadow-lg p-4 fade-in">
+            <h2 class="text-lg font-semibold border-b border-gray-700 pb-2 mb-3">🖥️ Console</h2>
+            <pre id="output" class="flex-grow overflow-y-auto whitespace-pre-wrap text-sm font-mono"></pre>
+        </div>
+    </main>
+    
+    <script>!function(e){if("object"==typeof exports&&"undefined"!=typeof module)module.exports=e();else if("function"==typeof define&&define.amd)define([],e);else{("undefined"!=typeof window?window:"undefined"!=typeof global?global:"undefined"!=typeof self?self:this).JSZip=e()}}(function(){return function e(t,r,n){function i(s,a){if(!r[s]){if(!t[s]){var u="function"==typeof require&&require;if(!a&&u)return u(s,!0);if(o)return o(s,!0);var f=new Error("Cannot find module '"+s+"'");throw f.code="MODULE_NOT_FOUND",f}var l=r[s]={exports:{}};t[s][0].call(l.exports,function(e){var r=t[s][1][e];return i(r||e)},l,l.exports,e,t,r,n)}return r[s].exports}for(var o="function"==typeof require&&require,s=0;s<n.length;s++)i(n[s]);return i}});</script>
+
+    <script type="module">
+        // ==================================================================================
+        // PyOS Core Logic
+        // ==================================================================================
+        const UI = {
+            statusIndicator: document.getElementById('status-indicator'),
+            statusText: document.getElementById('status-text'),
+            spinner: document.getElementById('spinner'),
+            editor: document.getElementById('editor'),
+            output: document.getElementById('output'),
+            fileBrowser: document.getElementById('file-browser'),
+            currentFile: document.getElementById('current-file'),
+            runBtn: document.getElementById('run-btn'),
+            saveBtn: document.getElementById('save-btn'),
+            exportBtn: document.getElementById('export-zip-btn'),
+        };
+
+        const PYOS_STATE = {
+            pyodide: null,
+            isReady: false,
+            currentFilePath: '/home/smtp_email_script.py',
+            // Point to the self-hosted proxy for reliable connections
+            workerUrl: 'ws://pyos-proxy.shawnscott171.workers.dev/proxy-session', 
+        };
+
+        // This Python code shims the 'socket' module to use our WebSocket proxy.
+        // It's essential for networking to work inside the browser sandbox.
+        const socketShimCode = `
+import sys, js
+from pyodide.ffi import create_proxy
+
+class PyOSSocket:
+    """
+    An asynchronous socket implementation that shims Python's socket
+    and translates its calls to asynchronous JavaScript operations.
+    """
+    def __init__(self, family=-1, type=-1, proto=-1, fileno=None, _sock=None):
+        if _sock:
+            self.family = _sock.family
+            self.type = _sock.type
+            self.proto = _sock.proto
+            self._sock_id = _sock._sock_id
+            self._is_connected = _sock._is_connected
+        else:
+            self.family = family
+            self.type = type
+            self.proto = proto
+            self._sock_id = None
+            self._is_connected = False
+
+    async def connect(self, address):
+        """Asynchronously connect to the given address via the JS proxy."""
+        host, port = address
+        js.pyos.network.log_from_python(f"[PyOS Socket] Intercepting async connect call to {host}:{port}")
+        sock_id = await js.pyos.network.connect(host, port)
+        self._sock_id = sock_id
+        self._is_connected = True
+        js.pyos.network.log_from_python(f"[PyOS Socket] Connection to {host}:{port} established (ID: {sock_id}).")
+
+    async def sendall(self, data):
+        """Asynchronously send data to the socket."""
+        if not self._is_connected or not self._sock_id: raise OSError("Socket is not connected")
+        if isinstance(data, str): data = data.encode('utf-8')
+        js.pyos.network.send(self._sock_id, create_proxy(data))
+        return len(data)
+
+    send = sendall # Alias for compatibility
+
+    async def recv(self, bufsize):
+        """Asynchronously receive data from the socket."""
+        if not self._is_connected or not self._sock_id: raise OSError("Socket is not connected")
+        js_buffer = await js.pyos.network.recv(self._sock_id, bufsize)
+        return js_buffer.to_py().tobytes()
+
+    def _reinit_after_tls(self):
+        """Called by JS to confirm the socket is now using TLS."""
+        js.pyos.network.log_from_python("[PyOS Socket] Re-initializing socket for secure TLS channel.")
+        pass
+
+    async def starttls(self):
+        """Asynchronously upgrade the connection to TLS via the proxy."""
+        if not self._is_connected or not self._sock_id: raise OSError("Socket is not connected")
+        js.pyos.network.log_from_python("[PyOS Socket] Upgrading connection to TLS...")
+        await js.pyos.network.starttls(self._sock_id, create_proxy(self))
+        js.pyos.network.log_from_python("[PyOS Socket] Connection is now secure.")
+
+    def close(self):
+        """Close the socket connection."""
+        if self._is_connected:
+            js.pyos.network.log_from_python("[PyOS Socket] Closing connection via proxy.")
+            if self._sock_id:
+                js.pyos.network.close(self._sock_id)
+        self._is_connected = False
+        self._sock_id = None
+    
+    # --- No-op methods required for compatibility ---
+    def settimeout(self, value): pass
+    def gettimeout(self): return None
+    def fileno(self): return -1
+    def getpeername(self): return ('proxied.host', 12345)
+    def getsockname(self): return ('local.proxy', 54321)
+    def getsockopt(self, level, optname, buflen=None):
+        socket_module = sys.modules['socket']
+        if level == socket_module.SOL_SOCKET and optname == socket_module.SO_TYPE:
+            return self.type
+        return 0
+
+class PyOSSocketModule:
+    """
+    A shim for the entire 'socket' module, replacing the standard
+    classes and functions with our async-compatible versions.
+    """
+    AF_INET, SOCK_STREAM = 2, 1
+    SOL_SOCKET, SO_TYPE = 1, 3
+    error = OSError
+    timeout = TimeoutError
+    herror = OSError
+    gaierror = OSError
+    _GLOBAL_DEFAULT_TIMEOUT = object()
+    
+    socket = PyOSSocket
+        
+    def getaddrinfo(self, host, port, family=0, type=0, proto=0, flags=0):
+        return [(self.AF_INET, self.SOCK_STREAM, proto, '', (host, port))]
+    
+    def create_connection(self, address, timeout=None, source_address=None):
+        raise NotImplementedError("socket.create_connection cannot be used. Use 'await socket.socket().connect()' instead.")
+
+sys.modules['socket'] = PyOSSocketModule()
+js.pyos.network.log_from_python("✅ PyOS async 'socket' module shimmed.")
+`;
+
+        async function loadPyOS() {
+            try {
+                const network = networkProxy();
+                globalThis.pyos = { network }; 
+                
+                const pyodide = await loadPyodide();
+                PYOS_STATE.pyodide = pyodide;
+                logToConsole("Pyodide runtime loaded.");
+
+                logToConsole("Loading 'ssl' package...");
+                await pyodide.loadPackage("ssl");
+                logToConsole("'ssl' package loaded.");
+
+                updateStatus("Initializing filesystem...");
+                pyodide.globals.set('pyos', { network });
+                
+                pyodide.FS.mount(pyodide.FS.filesystems.IDBFS, {}, '/home');
+                await syncFS(true);
+                logToConsole("Mounted /home to persistent storage.");
+
+                updateStatus("Patching Python standard library...");
+                await pyodide.runPythonAsync(socketShimCode);
+
+                if (PYOS_STATE.pyodide.FS.readdir('/home').filter(f => f.endsWith('.py')).length === 0) {
+                    await createWelcomeFile();
+                }
+
+                PYOS_STATE.isReady = true;
+                updateUIReady();
+                await refreshFileBrowser();
+                await loadFile(PYOS_STATE.currentFilePath);
+
+            } catch (error) {
+                console.error("PyOS Boot Error:", error);
+                const errorMsg = `A critical error occurred during PyOS boot: ${error}. This can happen if browser storage is blocked or corrupted. Try clearing site data or using a different browser.`;
+                logToConsole(errorMsg, true);
+                updateStatus(`❌ Boot Failed`, true);
+            }
+        }
+        
+        function syncFS(isInitial = false) {
+            return new Promise((resolve, reject) => {
+                PYOS_STATE.pyodide.FS.syncfs(isInitial, (err) => {
+                    if (err) return reject(err);
+                    resolve();
+                });
+            });
+        }
+
+        async function refreshFileBrowser() {
+            if (!PYOS_STATE.isReady) return;
+            const files = PYOS_STATE.pyodide.FS.readdir('/home').filter(f => f !== '.' && f !== '..');
+            
+            UI.fileBrowser.innerHTML = '';
+            if (files.length === 0) {
+                UI.fileBrowser.innerHTML = '<p class="text-gray-500">No files. Save one!</p>';
+                return;
+            }
+
+            files.forEach(file => {
+                const fileEl = document.createElement('div');
+                fileEl.className = 'p-2 my-1 rounded-md cursor-pointer hover:bg-gray-700 transition flex items-center justify-between';
+                
+                const fileName = document.createElement('span');
+                fileName.textContent = `📄 ${file}`;
+                fileEl.appendChild(fileName);
+
+                const deleteBtn = document.createElement('button');
+                deleteBtn.textContent = '🗑️';
+                deleteBtn.className = 'text-xs opacity-50 hover:opacity-100';
+                deleteBtn.onclick = async (e) => {
+                    e.stopPropagation();
+                    if (confirm(`Are you sure you want to delete ${file}?`)) {
+                        PYOS_STATE.pyodide.FS.unlink(`/home/${file}`);
+                        await syncFS();
+                        if (`/home/${file}` === PYOS_STATE.currentFilePath) {
+                            PYOS_STATE.currentFilePath = '/home/smtp_email_script.py';
+                        }
+                        await refreshFileBrowser();
+                        await loadFile(PYOS_STATE.currentFilePath);
+                    }
+                };
+                fileEl.appendChild(deleteBtn);
+                fileEl.dataset.path = `/home/${file}`;
+                fileEl.addEventListener('click', () => loadFile(fileEl.dataset.path));
+                UI.fileBrowser.appendChild(fileEl);
+            });
+        }
+
+        async function loadFile(path) {
+            try {
+                const content = PYOS_STATE.pyodide.FS.readFile(path, { encoding: 'utf8' });
+                UI.editor.value = content;
+                PYOS_STATE.currentFilePath = path;
+                UI.currentFile.textContent = path.split('/').pop();
+            } catch (e) {
+                await createWelcomeFile();
+                await loadFile(path);
+            }
+        }
+
+        async function saveCurrentFile() {
+            const content = UI.editor.value;
+            const path = PYOS_STATE.currentFilePath;
+            PYOS_STATE.pyodide.FS.writeFile(path, content, { encoding: 'utf8' });
+            await syncFS();
+            await refreshFileBrowser();
+            logToConsole(`✅ Saved ${path}`);
+        }
+
+        async function createWelcomeFile() {
+            const sampleCode = `# Fully Asynchronous SMTP Email Sender for PyOS (SMTPS version)
+# This script connects on port 465, which is secure from the start.
+
+import socket, js, base64
+
+# --- Your credentials and email details ---
+sender_email = ""
+password = "rbisscnufdosjmti" 
+receiver_email = ""
+
+subject = "Message from PyOS (via Port 465)"
+body = "This is a test email sent using SMTPS on port 465."
+message = f"Subject: {subject}\n\n{body}"
+
+# --- SMTP Server Configuration ---
+smtp_server = "smtp.gmail.com"
+# Change port to 465 for SMTPS/Implicit TLS
+port = 465 
+
+# Get a reference to the JS logging function for convenience
+log = js.pyos.network.log_from_python
+
+async def send_email():
+    """The main async function to connect, authenticate, and send the email."""
+    sock = None
+    try:
+        log("--- Secure Email Sender (Port 465) ---")
+        sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+
+        log(f"Connecting securely to {smtp_server}:{port}...")
+        # NOTE: For this to work, the proxy MUST establish a TLS connection.
+        await sock.connect((smtp_server, port))
+        
+        response = await sock.recv(1024)
+        log(f"S: {response.decode().strip()}")
+        if not response.startswith(b'220'): raise Exception("Server did not greet us correctly.")
+
+        # With SMTPS, we send EHLO once on the already-secure connection.
+        log("C: EHLO localhost")
+        await sock.sendall(b'EHLO localhost\r\n')
+        response = await sock.recv(4096)
+        log(f"S: {response.decode().strip()}")
+
+        # The STARTTLS negotiation is NOT needed. Proceed directly to AUTH.
+        log("C: AUTH LOGIN")
+        await sock.sendall(b'AUTH LOGIN\r\n')
+        response = await sock.recv(1024)
+        log(f"S: {response.decode().strip()}")
+        if not response.startswith(b'334'): raise Exception("AUTH LOGIN command failed.")
+
+        log("C: [Username]")
+        user_b64 = base64.b64encode(sender_email.encode())
+        await sock.sendall(user_b64 + b'\r\n')
+        response = await sock.recv(1024)
+        log(f"S: {response.decode().strip()}")
+        if not response.startswith(b'334'): raise Exception("Username was not accepted.")
+        
+        log("C: [Password]")
+        pass_b64 = base64.b64encode(password.encode())
+        await sock.sendall(pass_b64 + b'\r\n')
+        response = await sock.recv(1024)
+        log(f"S: {response.decode().strip()}")
+        if not response.startswith(b'235'): raise Exception("Password was not accepted. Check your App Password.")
+
+        # The rest of the email sending process is the same.
+        log(f"C: MAIL FROM:<{sender_email}>")
+        await sock.sendall(f'MAIL FROM:<{sender_email}>\r\n'.encode())
+        response = await sock.recv(1024)
+        log(f"S: {response.decode().strip()}")
+        if not response.startswith(b'250'): raise Exception("MAIL FROM failed.")
+
+        log(f"C: RCPT TO:<{receiver_email}>")
+        await sock.sendall(f'RCPT TO:<{receiver_email}>\r\n'.encode())
+        response = await sock.recv(1024)
+        log(f"S: {response.decode().strip()}")
+        if not response.startswith(b'250'): raise Exception("RCPT TO failed.")
+
+        log("C: DATA")
+        await sock.sendall(b'DATA\r\n')
+        response = await sock.recv(1024)
+        log(f"S: {response.decode().strip()}")
+        if not response.startswith(b'354'): raise Exception("DATA command failed.")
+
+        log("C: [Email Content]")
+        await sock.sendall(message.encode() + b'\r\n.\r\n')
+        response = await sock.recv(1024)
+        log(f"S: {response.decode().strip()}")
+        if not response.startswith(b'250'): raise Exception("Sending email content failed.")
+
+        log("C: QUIT")
+        await sock.sendall(b'QUIT\r\n')
+        response = await sock.recv(1024)
+        log(f"S: {response.decode().strip()}")
+
+        log("✅ Email sent successfully!")
+
+    except Exception as e:
+        log(f"❌ Failed to send email: {e}")
+    finally:
+        if sock:
+            sock.close()
+
+send_email()
+`;
+            PYOS_STATE.pyodide.FS.writeFile(PYOS_STATE.currentFilePath, sampleCode, { encoding: 'utf8' });
+            await syncFS();
+        }
+
+        function networkProxy() {
+            const sockets = new Map();
+            let nextSocketId = 1;
+
+            return {
+                connect: (host, port) => {
+                    return new Promise((resolve, reject) => {
+                        const sockId = nextSocketId++;
+                        const ws = new WebSocket(PYOS_STATE.workerUrl);
+                        const state = { ws, receiveBuffer: [], pendingRecv: null, connectPromise: { resolve, reject } };
+                        sockets.set(sockId, state);
+
+                        ws.onopen = () => ws.send(JSON.stringify({ type: 'tcp_connect', host, port }));
+
+                        ws.onmessage = (event) => {
+                            const msg = JSON.parse(event.data);
+                            const currentState = sockets.get(sockId);
+                            if (!currentState) return;
+
+                            switch (msg.type) {
+                                case 'tcp_connect_success':
+                                    if (currentState.connectPromise) {
+                                        currentState.connectPromise.resolve(sockId);
+                                        delete currentState.connectPromise;
+                                    }
+                                    break;
+                                case 'tcp_data':
+                                    const bytes = new Uint8Array(atob(msg.data).split("").map(c => c.charCodeAt(0)));
+                                    if (currentState.pendingRecv) {
+                                        currentState.pendingRecv.resolve(bytes);
+                                        currentState.pendingRecv = null;
+                                    } else {
+                                        currentState.receiveBuffer.push(bytes);
+                                    }
+                                    break;
+                                case 'tcp_error':
+                                case 'tcp_starttls_fail': // Treat TLS fail as a fatal error
+                                    const error = new Error(msg.error || "Proxy error");
+                                    logToConsole(`[Proxy ${sockId}] Error: ${error.message}`, true);
+                                    if (currentState.connectPromise) currentState.connectPromise.reject(error);
+                                    if (currentState.pendingRecv) currentState.pendingRecv.reject(error);
+                                    ws.close();
+                                    break;
+                                case 'tcp_closed':
+                                    if (currentState.pendingRecv) currentState.pendingRecv.resolve(new Uint8Array(0));
+                                    ws.close();
+                                    break;
+                            }
+                        };
+
+                        ws.onerror = () => {
+                            const error = new Error("WebSocket connection failed.");
+                            logToConsole(`[Proxy ${sockId}] ${error.message}`, true);
+                            if (state.connectPromise) state.connectPromise.reject(error);
+                            if (state.pendingRecv) state.pendingRecv.reject(error);
+                        };
+                        ws.onclose = () => {
+                            logToConsole(`[Proxy ${sockId}] WebSocket connection closed.`, true);
+                            if (state.pendingRecv) state.pendingRecv.resolve(new Uint8Array(0));
+                            sockets.delete(sockId);
+                        };
+                    });
+                },
+
+                send: (sockId, dataPyProxy) => {
+                    const state = sockets.get(sockId);
+                    if (!state) return;
+                    const payload = btoa(String.fromCharCode(...dataPyProxy.toJs()));
+                    state.ws.send(JSON.stringify({ type: 'tcp_write', data: payload }));
+                },
+
+                recv: (sockId, bufsize) => {
+                    return new Promise((resolve, reject) => {
+                        const state = sockets.get(sockId);
+                        if (!state) return reject(new Error("Socket has been closed."));
+                        if (state.receiveBuffer.length > 0) return resolve(state.receiveBuffer.shift());
+                        state.pendingRecv = { resolve, reject };
+                    });
+                },
+
+                starttls: (sockId, pySocketProxy) => {
+                    return new Promise((resolve, reject) => {
+                        const state = sockets.get(sockId);
+                        if (!state) return reject(new Error("Socket not found for STARTTLS."));
+
+                        const starttlsTimeout = setTimeout(() => reject(new Error("STARTTLS confirmation timed out.")), 10000);
+
+                        const originalOnMessage = state.ws.onmessage;
+                        state.ws.onmessage = (event) => {
+                            const msg = JSON.parse(event.data);
+                            if (msg.type === 'tcp_starttls_success') {
+                                clearTimeout(starttlsTimeout);
+                                logToConsole(`[Proxy ${sockId}] TLS negotiation successful.`);
+                                state.ws.onmessage = originalOnMessage;
+                                pySocketProxy._reinit_after_tls();
+                                resolve();
+                            } else {
+                                originalOnMessage(event);
+                            }
+                        };
+
+                        logToConsole(`[Proxy ${sockId}] Sending STARTTLS command to proxy...`);
+                        state.ws.send(JSON.stringify({ type: 'tcp_starttls' }));
+                    });
+                },
+
+                close: (sockId) => {
+                    const state = sockets.get(sockId);
+                    if (state && state.ws.readyState === WebSocket.OPEN) {
+                        state.ws.send(JSON.stringify({ type: 'tcp_close' }));
+                    }
+                    sockets.delete(sockId);
+                },
+
+                log_from_python: (message) => logToConsole(message)
+            };
+        }
+
+        async function runCode() {
+            if (!PYOS_STATE.isReady) return;
+            UI.runBtn.disabled = true;
+            UI.output.textContent = '';
+            logToConsole('🚀 Running script...');
+            const code = UI.editor.value;
+            
+            try {
+                await PYOS_STATE.pyodide.runPythonAsync(code);
+            } catch (error) {
+                logToConsole(`❌ Script Error:\n${error.toString()}`, true);
+            } finally {
+                UI.runBtn.disabled = false;
+            }
+        }
+
+        async function exportProject() {
+            if (typeof JSZip === 'undefined') {
+                logToConsole('JSZip library not found. Cannot export.', true);
+                return;
+            }
+            const zip = new JSZip();
+            const files = PYOS_STATE.pyodide.FS.readdir('/home').filter(f => f !== '.' && f !== '..');
+            files.forEach(file => {
+                const content = PYOS_STATE.pyodide.FS.readFile(`/home/${file}`, { encoding: 'binary' });
+                zip.file(file, content);
+            });
+            const zipBlob = await zip.generateAsync({ type: "blob" });
+            const a = document.createElement('a');
+            a.href = URL.createObjectURL(zipBlob);
+            a.download = 'pyos_home.zip';
+            a.click();
+            URL.revokeObjectURL(a.href);
+        }
+
+        function updateStatus(text, isError = false) {
+            UI.statusText.textContent = text;
+            if (isError) {
+                UI.statusIndicator.classList.remove('text-yellow-400', 'text-green-400');
+                UI.statusIndicator.classList.add('text-red-500');
+                UI.spinner?.classList.remove('animate-spin');
+            } else {
+                 if (text === "✅ Environment Ready") {
+                    UI.statusIndicator.classList.remove('text-yellow-400', 'text-red-500');
+                    UI.statusIndicator.classList.add('text-green-400');
+                    UI.spinner?.remove();
+                 }
+            }
+        }
+        
+        function logToConsole(message, isError = false) {
+            const line = document.createElement('div');
+            line.textContent = message;
+            if (isError) line.className = 'text-red-400';
+            UI.output.appendChild(line);
+            UI.output.scrollTop = UI.output.scrollHeight;
+        }
+
+        function updateUIReady() {
+            updateStatus("✅ Environment Ready");
+            [UI.runBtn, UI.saveBtn, UI.exportBtn].forEach(btn => btn.disabled = false);
+        }
+
+        function setupEventListeners() {
+            UI.runBtn.addEventListener('click', runCode);
+            UI.saveBtn.addEventListener('click', () => {
+                let filename = PYOS_STATE.currentFilePath.split('/').pop();
+                if (!filename || filename === 'smtp_email_script.py') {
+                    const newName = prompt("Enter new filename:", "my_script.py");
+                    if (newName?.trim()) {
+                        PYOS_STATE.currentFilePath = `/home/${newName.trim()}`;
+                        UI.currentFile.textContent = newName.trim();
+                    } else { return; }
+                }
+                saveCurrentFile();
+            });
+            UI.exportBtn.addEventListener('click', exportProject);
+        }
+        
+        // Initialize the application
+        setupEventListeners();
+        loadPyOS();
+    </script>
+
+</body>
+</html>
